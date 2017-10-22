@@ -30,3 +30,14 @@ class Test001Graph(unittest.TestCase):
         another_raw_edge = ( (99,1) )
         edge1.add_raw_edge(another_raw_edge)
         self.assertEqual(edge1.raw_edges, [(30, 60), (99,1)])
+
+    def test_00200_factories(self):
+        node1 = graph.node_factory.get_node("new rave")
+        node2 = graph.node_factory.get_node("new rave")
+        self.assertIs(node1, node2)
+
+        node3 = graph.node("old rave")
+
+        edge1 = graph.edge_factory.get_edge(node1, node3)
+        edge2 = graph.edge_factory.get_edge(node1, node3)
+        self.assertIs(edge1, edge2)

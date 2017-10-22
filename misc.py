@@ -2,6 +2,10 @@ import datetime
 import linecache
 import sys
 
+import pprint
+pp = pprint.PrettyPrinter( indent=2, depth=6 )
+dp = pp.pprint
+
 
 def print_exception():
     exc_type, exc_obj, tb = sys.exc_info()

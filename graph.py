@@ -42,8 +42,28 @@ class edge(object):
         """
         adds a raw edge
         :param raw_edge:
-        :type raw_edge: tuple[int, int]
+        :type raw_edge: tuple(int, int)
         :return: None
         """
         self.raw_edges.append(raw_edge)
 
+class node_factory(object):
+    nodes = {}
+
+    @classmethod
+    def get_node(cls, name):
+        if name not in cls.nodes:
+            cls.nodes[name] = node(name)
+        return cls.nodes[name]
+
+class edge_factory(object):
+    edges = {}
+
+    @classmethod
+    def get_edge(cls, node1, node2):
+        ids = [node1.name, node2.name]
+        ids.sort()
+        id = "_".join(ids)
+        if id not in cls.edges:
+            cls.edges[id] = edge(node1, node2)
+        return cls.edges[id]

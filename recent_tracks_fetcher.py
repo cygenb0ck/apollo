@@ -14,9 +14,6 @@ chunk_size = 200
 username = "cygenb0ck"
 
 
-# def dp(info, *a, **kwargs):
-
-
 mc = None
 db = None
 
@@ -38,12 +35,8 @@ def get_recent_tracks(userinfo):
 
     for i in range(request_count):
         recent_tracks_chunk = lapi.api_get_recent_tracks(username, chunk_size, i + 1)
-        # pp.pprint(recent_tracks_chunk)
-        # save_pretty_json( recent_tracks_chunk, 'recent_tracks_dump_pretty.json' )
         for track in recent_tracks_chunk["recenttracks"]["track"]:
-            print("-----------")
             try:
-                #if db.mycollection.find({'UserIDS': { "$in": newID}}).count() > 0.
                 query = {
                     "date": track["date"]
                 }
@@ -55,27 +48,8 @@ def get_recent_tracks(userinfo):
                 print('inserting ' + get_full_trackname(track) + ' ' + get_pretty_date(track['date']['uts']))
 
                 rid = recent_tracks.insert_one(track).inserted_id
-                print("mongo db id", rid)
                 count = recent_tracks.find(query).count()
                 dp(count)
-
-                # if recent_tracks["metadata"]["last_track"] >= int(track["date"]["uts"]) and recent_tracks["metadata"][
-                #     "first_track"] <= int(track["date"]["uts"]):
-                #     continue
-                #
-                # # FIXME: these metadata dates and checks produce gaps!
-                # if recent_tracks["metadata"]['last_track'] < int(track['date']['uts']):
-                #     recent_tracks['metadata']['last_track'] = int(track['date']['uts'])
-                #
-                # if recent_tracks["metadata"]['first_track'] > int(track['date']['uts']):
-                #     recent_tracks['metadata']['first_track'] = int(track['date']['uts'])
-                #
-                # day_key = get_date_key_from_uts(track['date']['uts'])
-                #
-                # if not day_key in recent_tracks['tracks_per_day']:
-                #     recent_tracks['tracks_per_day'][day_key] = list()
-                #
-                # recent_tracks['tracks_per_day'][day_key].append(track)
 
             except KeyError as e:
                 print('handling KeyError: ', e)
@@ -86,7 +60,6 @@ def get_recent_tracks(userinfo):
             else:
                 pass
             finally:
-                # print('-')
                 pass
         print(str(i + 1) + "/" + str(request_count))
 
@@ -101,10 +74,7 @@ def query_db():
     #     "mbid": ""
     # }
     result = recent_tracks.find(search).sort( [ ("date.uts", 1) ] )
-    # result.sort({"date.uts":1})
     for hit in result:
-        # dp(r)
-        # dp(r["artist"]["#text"])
         dp(get_pretty_date(hit["date"]["uts"]) + " - " + get_full_trackname(hit))
 
 def test():
