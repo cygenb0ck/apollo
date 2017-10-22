@@ -23,7 +23,6 @@ class node(object):
         self.edges[node.name] = edge
 
 
-
 class edge(object):
     def __init__(self, node_1, node_2):
         """
