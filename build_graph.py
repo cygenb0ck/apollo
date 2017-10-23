@@ -36,11 +36,12 @@ def build_graph():
             value2 = subset[1]["count"]
 
             # TODO: optional first filter for low weights
-            node1 = graph.node_factory.get_node(name1)
-            node2 = graph.node_factory.get_node(name2)
+            node1 = graph.NodeProvider.get_node(name1)
+            node2 = graph.NodeProvider.get_node(name2)
 
-            edge = graph.edge_factory.get_edge(node1, node2)
+            edge = graph.EdgeProvider.get_edge(node1, node2)
             edge.add_raw_edge((value1, value2))
+
 
 
 if __name__ == "__main__":
