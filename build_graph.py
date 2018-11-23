@@ -44,8 +44,8 @@ def build_graph():
                 continue
 
             # TODO: optional first filter for low weights
-            node1 = g.get_node(name1)
-            node2 = g.get_node(name2)
+            node1 = g.get_node_by_name(name1)
+            node2 = g.get_node_by_name(name2)
             edge = g.get_edge(node1, node2)
 
             # after adding, we dont know which value of tuple belongs to which node

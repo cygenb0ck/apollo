@@ -4,33 +4,52 @@ import json
 
 
 class SerializeableBase(object):
-    __id = 1
+    _id = 1
 
     def __init__(self):
-        self.id = SerializeableBase.__id
-        SerializeableBase.__id += 1
+        self.id = SerializeableBase._id
+        SerializeableBase._id += 1
 
     def to_json(self):
         raise RuntimeError("Not implemented for class {n}!".format(n=self.__class__.__name__))
 
 
 class Node(SerializeableBase):
-    def __init__(self, name):
+    def __init__(self, name=None, json=None):
         """
 
         :param name:
         :type name: str
         """
-        super(Node, self).__init__()
-        self.name = name
-        self.edges = {}
+        if name and json:
+            raise RuntimeError("cannot construct from name and json")
+
+        if name:
+            super(Node, self).__init__()
+            self.name = name
+            self.edges = []
+
+        elif json:
+            self.id = json["id"]
+            self.name = json["name"]
+            self.edges = json["edges"]
+
+        else:
+            raise RuntimeError("cannot construct from nothing")
+
+    @classmethod
+    def from_name(cls, name):
+        return Node(name=name)
+
+    @classmethod
+    def from_json(cls, json):
+        return Node(json=json)
 
     def to_json(self):
         return {
             "id" : self.id,
             "name": self.name,
-            "edges" : [ e.id for e in self.edges.values() ]
-
+            "edges": self.edges
         }
 
     def add_edge(self, edge, node ):
@@ -42,14 +61,12 @@ class Node(SerializeableBase):
         :type node: Node
         :return:
         """
-        self.edges[node.name] = edge
+        # self.edges[node.id] = edge
+        self.edges.append(edge.id)
 
     def is_equal(self, other):
         if self.name != other.name:
             return False
-
-        print("self e", self.edges)
-        print("other e", other.edges)
 
         if self.edges != other.edges:
             return False
@@ -57,7 +74,7 @@ class Node(SerializeableBase):
 
 
 class Edge(SerializeableBase):
-    def __init__(self, node_1, node_2):
+    def __init__(self, nodes=None, json=None):
         """
 
         :param node_1:
@@ -65,23 +82,49 @@ class Edge(SerializeableBase):
         :param node_2:
         :type node_2: Node
         """
-        super(Edge, self).__init__()
+        if nodes and json:
+            raise RuntimeError("cannot construct from nodes and json!")
 
-        self.nodes = {node_1.name: node_1, node_2.name: node_2}
+        if nodes:
+            node_1 = nodes[0]
+            node_2 = nodes[1]
+            super(Edge, self).__init__()
 
-        node_1.add_edge(self, node_2)
-        node_2.add_edge(self, node_1)
+            # self.nodes = {node_1.name: node_1, node_2.name: node_2}
+            self.nodes = (node_1.id, node_2.id)
 
-        self.raw_edges = [] # type: list[tuple[int, int]]
-        self.refined_value = None
+            node_1.add_edge(self, node_2)
+            node_2.add_edge(self, node_1)
+
+            self.raw_edges = [] # type: list[tuple[int, int]]
+            self.refined_value = None
+
+        elif json:
+            self.id = json["id"]
+            self.nodes = tuple(json["nodes"])
+            self.raw_edges = json["raw_edges"]
+
+        else:
+            raise RuntimeError("cannot construct from nothing")
+
+    @classmethod
+    def from_nodes(cls, node1, node2):
+        return Edge(nodes=[node1, node2])
+
+    @classmethod
+    def from_json(cls, json):
+        return Edge(json=json)
 
     def to_json(self):
         return {
             "id": self.id,
-            "nodes" : [n.id for n in self.nodes.values()],
+            "nodes" : self.nodes,
             "raw_edges" : [(r[0], r[1]) for r in self.raw_edges],
             "refined_value" : self.refined_value
         }
+
+    # def __repr__(self):
+    #     return "<E:{n} {id}>".format(n=self.na)
 
     def add_raw_edge(self, raw_edge):
         """
@@ -101,31 +144,50 @@ class Edge(SerializeableBase):
 
 class Graph(object):
     def __init__(self):
-        self.nodes = {}
-        self.edges = {}
+        self.nodes_by_name = {}
+        self.nodes_by_id = {}
+        self.edges_by_id = {}
 
-    def get_node(self, name):
-        if name not in self.nodes:
-            self.nodes[name] = Node(name)
-        return self.nodes[name]
-
-    def node_from_mongo_json(self, mongo_json):
-        # raise RuntimeError("implement me!")
-        n = Node(mongo_json["name"])
-        return n
+    def get_node_by_name(self, name):
+        if name not in self.nodes_by_name:
+            n = Node(name)
+            self.nodes_by_name[name] = n
+            self.nodes_by_id[n.id] = n
+        return self.nodes_by_name[name]
 
     def get_edge(self, node1, node2):
         ids = [node1.name, node2.name]
         ids.sort()
         id = "_###_".join(ids)
-        if id not in self.edges:
-            self.edges[id] = Edge(node1, node2)
-        return self.edges[id]
+        if id not in self.edges_by_id:
+            self.edges_by_id[id] = Edge.from_nodes(node1, node2)
+        return self.edges_by_id[id]
+
+    def save(self, mongo_db):
+        col_nodes = mongo_db["nodes"]
+        col_edges = mongo_db["edges"]
+
+        for n in self.nodes_by_id.values():
+            col_nodes.insert_one(GraphJsonEncoder().default(n))
+
+        for e in self.edges_by_id.values():
+            col_edges.insert_one(GraphJsonEncoder().default(e))
+
+    def load(self, mongo_db):
+        # build all edges
+        for edge in mongo_db["edges"].find({}):
+            e = Edge.from_json(edge)
+            self.edges_by_id[e.id] = e
+
+        # build nodes
+        for node in mongo_db["nodes"].find({}):
+            n = Node.from_json(node)
+            self.nodes_by_id[n.id] = n
+            self.nodes_by_name[n.name] = n
 
     def refine(self, refine_func):
-        for e in self.edges.values():
+        for e in self.edges_by_id.values():
             e.refine(refine_func)
-
 
 
 class GraphJsonEncoder(json.JSONEncoder):
