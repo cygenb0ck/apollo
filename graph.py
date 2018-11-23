@@ -5,6 +5,7 @@ import json
 
 class SerializeableBase(object):
     _id = 1
+
     def __init__(self):
         self.id = SerializeableBase._id
         SerializeableBase._id += 1
@@ -80,6 +81,7 @@ class Edge(SerializeableBase):
     def refine(self, refine_function):
         self.refined_value = refine_function(self.raw_edges)
 
+
 class Graph(object):
     def __init__(self):
         self.nodes = {}
@@ -91,8 +93,8 @@ class Graph(object):
         return self.nodes[name]
 
     def node_from_mongo_json(self, mongo_json):
+        raise RuntimeError("implement me!")
         n = Node(mongo_json["name"])
-
 
     def get_edge(self, node1, node2):
         ids = [node1.name, node2.name]

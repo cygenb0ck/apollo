@@ -61,6 +61,7 @@ class Test002Jsonification(unittest.TestCase):
     def tearDown(self):
         self.mc.drop_database("graph_test")
 
+    # @unittest.skip("xxxx {x}")
     def test_00300_json_encoder(self):
         g = graph.Graph()
         node1 = g.get_node("new rave")
