@@ -64,6 +64,7 @@ class Test002Jsonification(unittest.TestCase):
     # @unittest.skip("xxxx {x}")
     def test_00300_json_encoder(self):
         g = graph.Graph()
+
         node1 = g.get_node("new rave")
         node2 = g.get_node("old rave")
 
@@ -72,10 +73,15 @@ class Test002Jsonification(unittest.TestCase):
         print(graph.GraphJsonEncoder().default(node1))
         print(graph.GraphJsonEncoder().default(node2))
         print(graph.GraphJsonEncoder().default(edge1))
+
         self.collection.insert_one(graph.GraphJsonEncoder().default(node1))
+        self.collection.insert_one(graph.GraphJsonEncoder().default(node2))
+        self.collection.insert_one(graph.GraphJsonEncoder().default(edge1))
+
         json_from_db = self.collection.find_one({"name": "new rave"})
-        print(json_from_db)
-        print(json_from_db["name"])
+        print("json_from_db", json_from_db)
+        print("json_from_db[name]", json_from_db["name"])
         recreated_node = g.node_from_mongo_json(json_from_db)
-        self.assertTrue(node1 == recreated_node)
+        # self.assertTrue(node1 == recreated_node)
+        self.assertTrue(node1.is_equal(recreated_node))
 

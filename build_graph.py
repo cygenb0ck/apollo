@@ -10,6 +10,7 @@ import misc as M
 mc = None
 db = None
 
+threshold_value = 50
 
 def connect():
     global mc
@@ -19,6 +20,9 @@ def connect():
 
 
 def build_graph():
+
+    g = graph.Graph()
+
     tags_artists = db["top_tags_artists"]
     count = tags_artists.find({}).count()
     i = 1
@@ -26,8 +30,9 @@ def build_graph():
         print("{i}/{c}".format(i=i, c=count))
         i += 1
 
-        if tags["toptags"]["tag"] == []:
+        if len(tags["toptags"]["tag"]) < 2:
             continue
+
 
         for subset in itertools.combinations(tags["toptags"]["tag"], 2):
             name1 = subset[0]["name"]
@@ -35,15 +40,26 @@ def build_graph():
             name2 = subset[1]["name"]
             value2 = subset[1]["count"]
 
-            # TODO: optional first filter for low weights
-            node1 = graph.NodeProvider.get_node(name1)
-            node2 = graph.NodeProvider.get_node(name2)
+            if value1 < threshold_value or value2 < threshold_value:
+                continue
 
-            edge = graph.EdgeProvider.get_edge(node1, node2)
+            # TODO: optional first filter for low weights
+            node1 = g.get_node(name1)
+            node2 = g.get_node(name2)
+            edge = g.get_edge(node1, node2)
+
+            # after adding, we dont know which value of tuple belongs to which node
             edge.add_raw_edge((value1, value2))
 
+
+    return g
+
+def refine_graph(g):
+    return g
 
 
 if __name__ == "__main__":
     connect()
-    build_graph()
+    g = build_graph()
+    g.refine(graph.mul_arithmetic_mean)
+    g.save()
